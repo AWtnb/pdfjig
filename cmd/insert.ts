@@ -2,23 +2,19 @@ import { existsSync } from "@std/fs";
 import { Command } from "@cliffy/command";
 import { asPageIndex, withSuffix } from "../helper.ts";
 import { PDFDocument } from "pdf-lib";
-import { sprintf } from "@std/fmt/printf";
 
 const insertPages = async (
   path: string,
   insert: string,
-  fromIdx: number,
+  start: number,
 ): Promise<string | null> => {
   const baseData = await Deno.readFile(path);
   const baseDoc = await PDFDocument.load(baseData);
   const baseCount = baseDoc.getPageCount();
   const insertData = await Deno.readFile(insert);
   const insertDoc = await PDFDocument.load(insertData);
-  const insertCount = insertDoc.getPageCount();
 
-  if (fromIdx < 0) {
-    fromIdx = baseCount + fromIdx;
-  }
+  const insertPos = asPageIndex(start, baseCount);
   const outDoc = await PDFDocument.create();
 
   (
@@ -26,7 +22,7 @@ const insertPages = async (
       baseDoc,
       baseDoc
         .getPageIndices()
-        .filter((idx: number) => idx < fromIdx)
+        .filter((idx: number) => idx < insertPos)
         .map((idx: number) => idx),
     )
   ).forEach((page) => {
@@ -44,7 +40,7 @@ const insertPages = async (
       baseDoc,
       baseDoc
         .getPageIndices()
-        .filter((idx: number) => fromIdx <= idx)
+        .filter((idx: number) => insertPos <= idx)
         .map((idx: number) => idx),
     )
   ).forEach((page) => {
@@ -52,7 +48,7 @@ const insertPages = async (
   });
 
   const bytes = await outDoc.save();
-  const suf = sprintf("_insert%03d-%03d", fromIdx + 1, fromIdx + insertCount);
+  const suf = "_inserted";
   const outPath = withSuffix(path, suf);
   await Deno.writeFile(outPath, bytes);
   return outPath;
@@ -79,8 +75,7 @@ export const insertCommand = new Command()
       }
     }
 
-    const idx = asPageIndex(options.start);
-    const result = await insertPages(path, options.file, idx);
+    const result = await insertPages(path, options.file, options.start);
 
     if (result === null) {
       console.error("Failed to insert!");
