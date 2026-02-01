@@ -1,12 +1,7 @@
 import { Command } from "@cliffy/command";
 import { PDFPage, PDFDocument } from "pdf-lib";
 import { sprintf } from "@std/fmt/printf";
-
-const withSuffix = (path: string, suffix: string): string => {
-  const parts = path.split(".");
-  const extension = parts.pop() || "pdf";
-  return parts.join(".") + suffix + "." + extension;
-};
+import { withSuffix } from "../helper.ts";
 
 const extractPages = async (
   path: string,
