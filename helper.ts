@@ -30,10 +30,10 @@ const parseToken = (token: string): null | [number] | [number, number] => {
 };
 
 export const asPageIndices = (
-  nombres: string,
+  pageRange: string,
   maxPageCount: number,
 ): number[] => {
-  return nombres
+  return pageRange
     .split(",")
     .map((s) => s.trim())
     .map(parseToken)
