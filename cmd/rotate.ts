@@ -1,5 +1,5 @@
 import { Command } from "@cliffy/command";
-import { asPageIndex, withSuffix } from "../helper.ts";
+import { asPageIndices, withSuffix } from "../helper.ts";
 import { PDFDocument, degrees } from "pdf-lib";
 import { sprintf } from "@std/fmt/printf";
 
@@ -11,17 +11,15 @@ const checkDegree = (degree: number): boolean => {
 const rotatePages = async (
   path: string,
   degree: number,
-  indices: number[],
+  range: string,
 ): Promise<string | null> => {
   const baseData = await Deno.readFile(path);
   const baseDoc = await PDFDocument.load(baseData);
   const outDoc = await PDFDocument.create();
 
   const pages = await outDoc.copyPages(baseDoc, baseDoc.getPageIndices());
-  const pageCount = baseDoc.getPageCount();
-  const targets = indices.map((i) => {
-    return i < 0 ? pageCount + i : i;
-  });
+
+  const targets = asPageIndices(range, baseDoc.getPageCount());
 
   pages.forEach((page, i) => {
     const added = outDoc.addPage(page);
@@ -44,10 +42,10 @@ export const rotateCommand = new Command()
     default: 90,
   })
   .option(
-    "-p, --pages <pages:string>",
-    "comma-separated pages to rotate (1-origin, -1 is last page)",
+    "-r, --range <range:string>",
+    "pages to rotate (1-origin, comma-separated, dash-joined)",
     {
-      default: "1,-1",
+      default: "1--1",
     },
   )
   .action(async (options, path) => {
@@ -55,8 +53,7 @@ export const rotateCommand = new Command()
       console.error("Invalid degree (must be 90-unit)", options.degree);
       Deno.exit(1);
     }
-    const pages = toPageIndices(options.pages);
-    const result = await rotatePages(path, options.degree, pages);
+    const result = await rotatePages(path, options.degree, options.range);
 
     if (result === null) {
       console.error("Failed to rotate!");
