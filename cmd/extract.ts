@@ -20,7 +20,7 @@ const extractPages = async (
     console.error("invalid range:", range);
     return null;
   } else {
-    console.log(
+    console.debug(
       "target pages:",
       indices.map((i) => i + 1),
     );
@@ -42,7 +42,7 @@ export const extractCommand = new Command()
   .arguments("<path:string>")
   .option(
     "-r, --range <range:string>",
-    "extract range (1-origin, comma-sep, dash-joined)",
+    "extract range (1-origin, comma-separated, dash-joined)",
     {
       default: "1--1",
     },
