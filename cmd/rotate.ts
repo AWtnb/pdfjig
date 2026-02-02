@@ -43,9 +43,9 @@ export const rotateCommand = new Command()
   })
   .option(
     "-r, --range <range:string>",
-    "pages to rotate (1-origin, comma-separated, dash-joined)",
+    "Page ranges (1-based); comma-separated, hyphen ranges, negative = from end. e.g. 1-3,5,7-,-1",
     {
-      default: "1--1",
+      default: "1-",
     },
   )
   .action(async (options, path) => {

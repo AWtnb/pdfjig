@@ -42,9 +42,9 @@ export const extractCommand = new Command()
   .arguments("<path:string>")
   .option(
     "-r, --range <range:string>",
-    "extract range (1-origin, comma-separated, dash-joined)",
+    "Page ranges (1-based); comma-separated, hyphen ranges, negative = from end. e.g. 1-3,5,7-,-1",
     {
-      default: "1--1",
+      default: "1-",
     },
   )
   .action(async (options, path) => {

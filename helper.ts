@@ -17,8 +17,13 @@ const toInt = (s: string): number | null => {
 };
 
 const parseToken = (token: string): null | [number] | [number, number] => {
-  const rangeMatch = token.match(/^(-?\d+)-(-?\d+)$/);
+  const startOnlyMatch = token.match(/^(-?\d+)-$/);
+  if (startOnlyMatch) {
+    const start = toInt(startOnlyMatch[1]);
+    return start !== null ? [start, -1] : null;
+  }
 
+  const rangeMatch = token.match(/^(-?\d+)-(-?\d+)$/);
   if (rangeMatch) {
     const start = toInt(rangeMatch[1]);
     const end = toInt(rangeMatch[2]);
@@ -29,6 +34,30 @@ const parseToken = (token: string): null | [number] | [number, number] => {
   return n === null ? null : [n];
 };
 
+/**
+ * Parse a compact page-range string and return zero-based page indices.
+ *
+ * Syntax (1-based pages):
+ * - `N`      : single page (e.g. "5")
+ * - `A-B`    : closed inclusive range (e.g. "1-3")
+ * - `A-`     : open-ended range from A to last page (e.g. "7-")
+ * - negative : count from the end (e.g. "-1" = last page, "-3--1" = third-last..last)
+ * - tokens are comma-separated; whitespace is ignored; invalid tokens are skipped.
+ *
+ * Parameters:
+ * @param pageRange - page-range string to parse
+ * @param maxPageCount - total number of pages in the document
+ *
+ * Returns:
+ * An array of zero-based page indices. Indices are returned in the order of tokens/ranges
+ * and may include duplicates.
+ *
+ * Examples (maxPageCount = 10):
+ * - asPageIndices("1-3", 10)   => [0, 1, 2]
+ * - asPageIndices("5", 10)     => [4]
+ * - asPageIndices("7-", 10)    => [6, 7, 8, 9]
+ * - asPageIndices("-1", 10)    => [9]
+ */
 export const asPageIndices = (
   pageRange: string,
   maxPageCount: number,
@@ -42,13 +71,10 @@ export const asPageIndices = (
       if (token.length == 1) {
         return asPageIndex(token[0], maxPageCount);
       }
-      const [start, end] = token;
+      const start = asPageIndex(token[0], maxPageCount);
+      const end = asPageIndex(token[1], maxPageCount);
       const arr = [];
-      for (
-        let i = asPageIndex(start, maxPageCount);
-        i <= asPageIndex(end, maxPageCount);
-        i++
-      ) {
+      for (let i = start; i <= end; i++) {
         arr.push(i);
       }
       return arr;
