@@ -7,22 +7,27 @@ import {
   TransformationMatrix,
 } from "pdf-lib";
 
-const getSpreadPageSize = (
-  pages: [PDFPage, PDFPage],
-  vertical: boolean,
-): [number, number] => {
-  const mboxA = pages[0].getMediaBox();
-  const mboxB = pages[1].getMediaBox();
-  const width = vertical
-    ? Math.max(mboxA.width, mboxB.width)
-    : mboxA.width + mboxB.width;
-  const height = vertical
-    ? mboxA.height + mboxB.height
-    : Math.max(mboxA.height, mboxB.height);
-  return [width, height];
+type PagePair = [PDFPage, PDFPage];
+
+const getPageDimensions = (page: PDFPage) => {
+  const mbox = page.getMediaBox();
+  return { width: mbox.width, height: mbox.height };
 };
 
-const getBoundingBox = (page: PDFPage): PageBoundingBox => {
+const getSpreadDimensions = (
+  pair: PagePair,
+  vertical: boolean,
+): [number, number] => {
+  const [pageA, pageB] = pair.map(getPageDimensions);
+
+  if (vertical) {
+    return [Math.max(pageA.width, pageB.width), pageA.height + pageB.height];
+  }
+
+  return [pageA.width + pageB.width, Math.max(pageA.height, pageB.height)];
+};
+
+const createBoundingBox = (page: PDFPage): PageBoundingBox => {
   const mbox = page.getMediaBox();
   return {
     left: mbox.x,
@@ -32,26 +37,47 @@ const getBoundingBox = (page: PDFPage): PageBoundingBox => {
   };
 };
 
-const getBoundingBoxes = (pages: [PDFPage, PDFPage]): PageBoundingBox[] => {
-  return pages.map((page) => getBoundingBox(page));
-};
-
-const getTransformationMatrix = (
-  w: number = 0,
-  h: number = 0,
-): TransformationMatrix => {
-  return [1, 0, 0, 1, w, h];
-};
-
-const toTransformationMatrixes = (
-  base: PDFPage,
+const createTransformMatrix = (
+  basePage: PDFPage,
   vertical: boolean,
 ): [TransformationMatrix, TransformationMatrix] => {
-  const mat = getTransformationMatrix();
+  const identity: TransformationMatrix = [1, 0, 0, 1, 0, 0];
+
   if (vertical) {
-    return [getTransformationMatrix(0, base.getHeight()), mat];
+    return [[1, 0, 0, 1, 0, basePage.getHeight()], identity];
   }
-  return [mat, getTransformationMatrix(base.getWidth(), 0)];
+
+  return [identity, [1, 0, 0, 1, basePage.getWidth(), 0]];
+};
+
+const arrangePair = (pages: PagePair, opposite: boolean): PagePair => {
+  const arranged: PagePair = opposite ? [pages[1], pages[0]] : pages;
+  return arranged;
+};
+
+const createSpreadPage = async (
+  outDoc: PDFDocument,
+  pair: PagePair,
+  vertical: boolean,
+) => {
+  const dimensions = getSpreadDimensions(pair, vertical);
+  const spreadPage = outDoc.addPage(dimensions);
+  spreadPage.setRotation(pair[0].getRotation());
+
+  const boundingBoxes = pair.map(createBoundingBox);
+  const matrices = createTransformMatrix(pair[0], vertical);
+  (await outDoc.embedPages(pair, boundingBoxes, matrices)).forEach(
+    (embeddable) => {
+      spreadPage.drawPage(embeddable);
+    },
+  );
+
+  return spreadPage;
+};
+
+const hasHiddenRotation = (page: PDFPage): boolean => {
+  const a = page.getRotation().angle;
+  return a == 90 || a == 270 || a == -90;
 };
 
 const spread = async (
@@ -63,23 +89,11 @@ const spread = async (
   const data = await Deno.readFile(path);
   const srcDoc = await PDFDocument.load(data);
   const outDoc = await PDFDocument.create();
-  const range = srcDoc.getPageIndices();
-  const pages = await outDoc.copyPages(srcDoc, range);
 
-  const hasHiddenRotation = pages.some((page) => {
-    const a = page.getRotation().angle;
-    return a == 90 || a == 270 || a == -90;
-  });
+  const pages = await outDoc.copyPages(srcDoc, srcDoc.getPageIndices());
 
-  if (hasHiddenRotation) {
-    vertical = !vertical;
-  }
-
-  if (singleTopPage) {
-    const head = pages.shift();
-    if (head) {
-      outDoc.addPage(head);
-    }
+  if (singleTopPage && 0 < pages.length) {
+    outDoc.addPage(pages.shift()!);
   }
 
   for (let i = 0; i < pages.length; i += 2) {
@@ -88,24 +102,10 @@ const spread = async (
       outDoc.addPage(page);
       continue;
     }
-    const nextPage = pages[i + 1];
-    const pair: [PDFPage, PDFPage] = opposite
-      ? [nextPage, page]
-      : [page, nextPage];
 
-    const dim = getSpreadPageSize(pair, vertical);
-    const addedPage = outDoc.addPage(dim);
-    addedPage.setRotation(page.getRotation());
-
-    (
-      await outDoc.embedPages(
-        pair,
-        getBoundingBoxes(pair),
-        toTransformationMatrixes(pair[0], vertical),
-      )
-    ).forEach((embeddable) => {
-      addedPage.drawPage(embeddable);
-    });
+    const pair = arrangePair([pages[i], pages[i + 1]], opposite);
+    const v = pair.some(hasHiddenRotation) ? !vertical : vertical;
+    await createSpreadPage(outDoc, pair, v);
   }
 
   const bytes = await outDoc.save();
