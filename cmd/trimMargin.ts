@@ -100,5 +100,5 @@ export const trimMarginCommand = new Command()
   )
   .action(async (options, path) => {
     const result = await trimMargin(path, options.margin);
-    console.log(`Embedded: ${result}`);
+    console.log(`Trimmed: ${result}`);
   });
