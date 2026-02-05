@@ -24,7 +24,7 @@ const rotatePages = async (
   pages.forEach((page, i) => {
     const added = outDoc.addPage(page);
     if (targets.includes(i)) {
-      added.setRotation(degrees(degree));
+      added.setRotation(degrees(page.getRotation().angle + degree));
     }
   });
 
