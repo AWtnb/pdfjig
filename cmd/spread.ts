@@ -66,12 +66,12 @@ const spread = async (
   const range = srcDoc.getPageIndices();
   const pages = await outDoc.copyPages(srcDoc, range);
 
-  const rotated = pages.some((page) => {
+  const hasHiddenRotation = pages.some((page) => {
     const a = page.getRotation().angle;
     return a == 90 || a == 270 || a == -90;
   });
 
-  if (rotated) {
+  if (hasHiddenRotation) {
     vertical = !vertical;
   }
 
@@ -93,21 +93,18 @@ const spread = async (
       ? [nextPage, page]
       : [page, nextPage];
 
-    if (vertical && rotated) {
-      pair.unshift(pair.pop()!);
-    }
-
     const dim = getSpreadPageSize(pair, vertical);
     const addedPage = outDoc.addPage(dim);
     addedPage.setRotation(page.getRotation());
 
-    const embedded = await outDoc.embedPages(
-      pair,
-      getBoundingBoxes(pair),
-      toTransformationMatrixes(pair[0], vertical),
-    );
-    embedded.forEach((emb) => {
-      addedPage.drawPage(emb);
+    (
+      await outDoc.embedPages(
+        pair,
+        getBoundingBoxes(pair),
+        toTransformationMatrixes(pair[0], vertical),
+      )
+    ).forEach((embeddable) => {
+      addedPage.drawPage(embeddable);
     });
   }
 
