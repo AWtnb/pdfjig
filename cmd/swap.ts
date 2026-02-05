@@ -6,7 +6,7 @@ const swapPages = async (
   path: string,
   embedFilePath: string,
   start: number,
-): Promise<string | null> => {
+): Promise<string> => {
   const baseData = await Deno.readFile(path);
   const baseDoc = await PDFDocument.load(baseData);
   const baseCount = baseDoc.getPageCount();
@@ -61,11 +61,6 @@ export const swapCommand = new Command()
   )
   .action(async (options, path) => {
     const result = await swapPages(path, options.file, options.start);
-
-    if (result === null) {
-      console.error("Failed to embed!");
-      Deno.exit(1);
-    }
 
     console.log(`Embedded: ${result}`);
   });

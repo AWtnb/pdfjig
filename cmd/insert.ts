@@ -7,7 +7,7 @@ const insertPages = async (
   path: string,
   insert: string,
   start: number,
-): Promise<string | null> => {
+): Promise<string> => {
   const baseData = await Deno.readFile(path);
   const baseDoc = await PDFDocument.load(baseData);
   const baseCount = baseDoc.getPageCount();
@@ -76,11 +76,5 @@ export const insertCommand = new Command()
     }
 
     const result = await insertPages(path, options.file, options.start);
-
-    if (result === null) {
-      console.error("Failed to insert!");
-      Deno.exit(1);
-    }
-
     console.log(`Inserted: ${result}`);
   });

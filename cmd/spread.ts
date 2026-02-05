@@ -85,7 +85,7 @@ const spread = async (
   vertical: boolean,
   singleTopPage: boolean,
   opposite: boolean,
-): Promise<string | null> => {
+): Promise<string> => {
   const data = await Deno.readFile(path);
   const srcDoc = await PDFDocument.load(data);
   const outDoc = await PDFDocument.create();
@@ -127,11 +127,6 @@ export const spreadCommand = new Command()
       !!options.singleTop,
       !!options.opposite,
     );
-
-    if (result === null) {
-      console.error("Failed to spread!");
-      Deno.exit(1);
-    }
 
     console.log(`Spread: ${result}`);
   });

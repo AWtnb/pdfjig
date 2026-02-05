@@ -54,11 +54,5 @@ export const rotateCommand = new Command()
       Deno.exit(1);
     }
     const result = await rotatePages(path, options.degree, options.range);
-
-    if (result === null) {
-      console.error("Failed to rotate!");
-      Deno.exit(1);
-    }
-
     console.log(`Rotated: ${result}`);
   });
