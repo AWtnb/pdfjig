@@ -8,6 +8,7 @@ import { rotateCommand } from "./cmd/rotate.ts";
 import { spreadCommand } from "./cmd/spread.ts";
 import { swapCommand } from "./cmd/swap.ts";
 import { splitCommand } from "./cmd/split.ts";
+import { unzipCommand } from "./cmd/unzip.ts";
 import { watermarkCommand } from "./cmd/watermark.ts";
 
 await new Command()
@@ -22,5 +23,6 @@ await new Command()
   .command("spread", spreadCommand)
   .command("swap", swapCommand)
   .command("split", splitCommand)
+  .command("unzip", unzipCommand)
   .command("watermark", watermarkCommand)
   .parse(Deno.args);
