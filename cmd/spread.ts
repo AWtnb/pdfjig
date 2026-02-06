@@ -1,5 +1,5 @@
 import { Command } from "@cliffy/command";
-import { withSuffix } from "../helper.ts";
+import { getHiddenRotation, withSuffix } from "../helper.ts";
 import {
   PDFDocument,
   PDFPage,
@@ -75,11 +75,6 @@ const createSpreadPage = async (
   return spreadPage;
 };
 
-const hasHiddenRotation = (page: PDFPage): boolean => {
-  const a = page.getRotation().angle;
-  return a == 90 || a == 270 || a == -90;
-};
-
 const spread = async (
   path: string,
   vertical: boolean,
@@ -103,8 +98,12 @@ const spread = async (
       continue;
     }
 
+    const hiddenRotation = getHiddenRotation(page);
+    const v = hiddenRotation !== null ? !vertical : vertical;
+    if (hiddenRotation == 90) {
+      opposite = !opposite;
+    }
     const pair = arrangePair([pages[i], pages[i + 1]], opposite);
-    const v = pair.some(hasHiddenRotation) ? !vertical : vertical;
     await createSpreadPage(outDoc, pair, v);
   }
 

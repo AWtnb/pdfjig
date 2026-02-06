@@ -7,7 +7,7 @@ import { insertCommand } from "./cmd/insert.ts";
 import { rotateCommand } from "./cmd/rotate.ts";
 import { spreadCommand } from "./cmd/spread.ts";
 import { swapCommand } from "./cmd/swap.ts";
-import { unspreadCommand } from "./cmd/unspread.ts";
+import { splitCommand } from "./cmd/split.ts";
 import { watermarkCommand } from "./cmd/watermark.ts";
 
 await new Command()
@@ -21,6 +21,6 @@ await new Command()
   .command("rotate", rotateCommand)
   .command("spread", spreadCommand)
   .command("swap", swapCommand)
-  .command("unspread", unspreadCommand)
+  .command("split", splitCommand)
   .command("watermark", watermarkCommand)
   .parse(Deno.args);

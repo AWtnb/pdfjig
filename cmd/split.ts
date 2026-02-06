@@ -1,6 +1,10 @@
 import { Command } from "@cliffy/command";
 import { PDFDocument, PDFPage } from "pdf-lib";
-import { withSuffix } from "../helper.ts";
+import {
+  getHiddenRotation,
+  HiddenRotationDegree,
+  withSuffix,
+} from "../helper.ts";
 
 class PageSize {
   readonly variants: number[];
@@ -72,18 +76,19 @@ const getCropParams = (
 const processSpreadPage = async (
   outDoc: PDFDocument,
   page: PDFPage,
-  vertical: boolean,
+  hiddenRotation: HiddenRotationDegree | null,
   opposite: boolean,
-  hasHiddenRotation: boolean,
 ) => {
+  const vertical = hiddenRotation !== null;
   const dimension = vertical ? page.getHeight() : page.getWidth();
   const halfDim = Math.floor(dimension / 2);
 
-  let offsets = opposite ? [halfDim, 0] : [0, halfDim];
-
-  if (hasHiddenRotation || vertical) {
-    offsets = [offsets[1], offsets[0]];
+  if (hiddenRotation == 270) {
+    // Since PDF coordinate system starts from bottom-left,
+    // when rotated 270 degrees, processing from the "far side" first gives a more natural result.
+    opposite = !opposite;
   }
+  const offsets = opposite ? [halfDim, 0] : [0, halfDim];
 
   for (const offset of offsets) {
     const params = getCropParams(page, vertical, offset, halfDim);
@@ -107,12 +112,12 @@ const processSingledPage = async (
   await embedCroppedPage(outDoc, page, params);
 };
 
-const unspread = async (
+const splitEachPage = async (
   path: string,
   vertical: boolean,
   opposite: boolean,
 ): Promise<string> => {
-  console.log(`Unspreading: ${path}`);
+  console.log(`Splitting pages: ${path}`);
 
   const data = await Deno.readFile(path);
   const srcDoc = await PDFDocument.load(data);
@@ -122,8 +127,7 @@ const unspread = async (
   const pages = await outDoc.copyPages(srcDoc, range);
 
   const hasHiddenRotation = pages.some((page) => {
-    const angle = page.getRotation().angle;
-    return [90, 270, -90].includes(angle);
+    return getHiddenRotation(page) !== null;
   });
 
   if (hasHiddenRotation) vertical = !vertical;
@@ -147,28 +151,26 @@ const unspread = async (
     }
 
     // Process spread pages
-    await processSpreadPage(
-      outDoc,
-      page,
-      vertical,
-      opposite,
-      hasHiddenRotation,
-    );
+    await processSpreadPage(outDoc, page, getHiddenRotation(page), opposite);
   }
 
   const bytes = await outDoc.save();
-  const outPath = withSuffix(path, "_unspread");
+  const outPath = withSuffix(path, "_split");
   await Deno.writeFile(outPath, bytes);
 
   return outPath;
 };
 
-export const unspreadCommand = new Command()
-  .description("unspread (half-split) pages of a pdf.")
+export const splitCommand = new Command()
+  .description("half-split pages of a pdf.")
   .arguments("<path:string>")
-  .option("-v, --vertical", "unspread (half-split) up and down.")
+  .option("-v, --vertical", "split upside and downside.")
   .option("-o, --opposite", "arrange each split page pair in opposite order.")
   .action(async (options, path) => {
-    const result = await unspread(path, !!options.vertical, !!options.opposite);
-    console.log(`Unspread: ${result}`);
+    const result = await splitEachPage(
+      path,
+      !!options.vertical,
+      !!options.opposite,
+    );
+    console.log(`Split: ${result}`);
   });

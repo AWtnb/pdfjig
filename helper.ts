@@ -1,3 +1,16 @@
+import { PDFPage } from "pdf-lib";
+
+export type HiddenRotationDegree = 90 | 270;
+
+export const getHiddenRotation = (
+  page: PDFPage,
+): HiddenRotationDegree | null => {
+  const a = page.getRotation().angle;
+  if (a == 90 || a == -270) return 90;
+  if (a == 270 || a == -90) return 270;
+  return null;
+};
+
 export const withSuffix = (path: string, suffix: string): string => {
   const parts = path.split(".");
   const extension = parts.pop() || "pdf";
