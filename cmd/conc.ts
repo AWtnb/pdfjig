@@ -23,6 +23,7 @@ const concFiles = async (paths: string[], outname: string): Promise<string> => {
 };
 
 export const concCommand = new Command()
+  .description("concatenate piped pdf files.")
   .arguments("[files...:string]")
   .option("-o, --output <file:string>", "output filename", {
     default: "conc.pdf",

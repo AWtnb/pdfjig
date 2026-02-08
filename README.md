@@ -1,8 +1,25 @@
 # README
 
+## Commands
+
+
+```
+apply-trimbox  <path>      - apply trimbox to each page of a pdf.
+conc           [files...]  - concatenate piped pdf files.
+extract        <path>      - extract page(s) from pdf file.
+insert         <path>      - insert page(s) to a pdf file.
+rotate         <path>      - rotate page(s) of a pdf file.
+split          <path>      - half-split pages of a pdf.
+spread         <path>      - spread page(s) to a pdf file.
+swap           <path>      - swap page(s) of a pdf with another file.
+trim-margin    <path>      - trim margin of all page of a pdf.
+unzip          <path>      - extract odd and even pages of the pdf into separate files.
+watermark      <path>      - insert text as watermark on each page of a pdf file.
+```
+
 ## Page range syntax
 
-Specify pages using a compact page-range syntax (1-based indexing). Tokens are comma-separated; each token can be a single page, a hyphen range, or an open-ended range. Negative numbers count from the end.
+`-r`, `--range` Specify pages using a comma-separated list. Supports single pages (`5`), ranges (`1-5`), and open-ended ranges (`10-`). Use negative numbers to count from the end of the document (e.g., `-1` is the last page).
 
 
 **Accepted forms**
