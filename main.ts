@@ -1,5 +1,5 @@
 import { Command } from "@cliffy/command";
-import { applyTrimboxCommand } from "./cmd/applytrimbox.ts";
+import { applyTrimboxCommand } from "./cmd/applyTrimbox.ts";
 import { concCommand } from "./cmd/conc.ts";
 import { extractCommand } from "./cmd/extract.ts";
 import { insertCommand } from "./cmd/insert.ts";
