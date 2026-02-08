@@ -77,13 +77,13 @@ const processSpreadPage = async (
   outDoc: PDFDocument,
   page: PDFPage,
   hiddenRotation: HiddenRotationDegree | null,
+  vertical: boolean,
   opposite: boolean,
 ) => {
-  const vertical = hiddenRotation !== null;
   const dimension = vertical ? page.getHeight() : page.getWidth();
   const halfDim = Math.floor(dimension / 2);
 
-  if (hiddenRotation == 270) {
+  if (hiddenRotation == 270 || (hiddenRotation === null && vertical)) {
     // Since PDF coordinate system starts from bottom-left,
     // when rotated 270 degrees, processing from the "far side" first gives a more natural result.
     opposite = !opposite;
@@ -151,7 +151,13 @@ const splitEachPage = async (
     }
 
     // Process spread pages
-    await processSpreadPage(outDoc, page, getHiddenRotation(page), opposite);
+    await processSpreadPage(
+      outDoc,
+      page,
+      getHiddenRotation(page),
+      vertical,
+      opposite,
+    );
   }
 
   const bytes = await outDoc.save();
