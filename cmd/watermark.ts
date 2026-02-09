@@ -80,7 +80,9 @@ const overlay = async (
 ): Promise<OverlayResult> => {
   const fonts = await getFonts();
   if (fonts.length < 1) {
-    console.log("cannot find font file (.ttf) in the same directory as exe.");
+    console.error(
+      "Cannot find font file. Place *.ttf file in the same directory as `pdfjig.exe` or `pdfjig/main.ts`.",
+    );
     return { Returncode: 1, Count: 0 };
   }
 
