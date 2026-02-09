@@ -5,24 +5,15 @@ import { withSuffix } from "../helper.ts";
 import { type Degrees, degrees, PDFDocument, PDFPage } from "pdf-lib";
 import * as fontkit from "fontkit";
 
-const getRoot = (): string => {
-  const p = Deno.execPath();
-  if (p.endsWith(join("deno", "current", "deno.exe"))) {
-    return Deno.cwd();
-  }
-  return dirname(p);
-};
-
-const getFonts = async (): Promise<string[]> => {
-  const names: string[] = [];
-  const d = getRoot();
+const getFont = async (pdfPath: string): Promise<string | null> => {
+  const d = dirname(pdfPath);
   for await (const dirEntry of Deno.readDir(d)) {
     const n = dirEntry.name;
     if (n.endsWith(".ttf")) {
-      names.push(join(d, n));
+      return join(d, n);
     }
   }
-  return names;
+  return null;
 };
 
 interface OverlayResult {
@@ -78,10 +69,11 @@ const overlay = async (
   text: string,
   startNombre: number,
 ): Promise<OverlayResult> => {
-  const fonts = await getFonts();
-  if (fonts.length < 1) {
+  const font = await getFont(path);
+  if (font === null) {
     console.error(
-      "Cannot find font file. Place *.ttf file in the same directory as `pdfjig.exe` or `pdfjig/main.ts`.",
+      "Cannot find font file. Place *.ttf file in the same directory as",
+      path,
     );
     return { Returncode: 1, Count: 0 };
   }
@@ -98,7 +90,7 @@ const overlay = async (
 
   const fontsize = 9;
   outDoc.registerFontkit(fontkit);
-  const fontData = await outDoc.embedFont(Deno.readFileSync(fonts[0]));
+  const fontData = await outDoc.embedFont(Deno.readFileSync(font));
 
   pages.forEach((page: PDFPage, idx: number) => {
     const watermark = sprintf("%s(p.%03d)  ", text, startNombre + idx);
