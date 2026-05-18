@@ -1,7 +1,13 @@
 import { Command } from "@cliffy/command";
-import { PDFDocument, PDFPage } from "pdf-lib";
+import {
+  PDFDocument,
+  PDFPage,
+  PDFArray,
+  PDFDict,
+  PDFName,
+  PDFRef,
+} from "pdf-lib";
 import { withSuffix } from "../helper.ts";
-
 interface PageBox {
   x: number;
   y: number;
@@ -39,6 +45,18 @@ const parseMargin = (margin: string): [number, number, number, number] => {
     default:
       throw new Error("Invalid margin format"); // fallback
   }
+};
+
+const copyPageLabels = (srcDoc: PDFDocument, outDoc: PDFDocument): void => {
+  const srcCatalog = srcDoc.catalog;
+  const pageLabels = srcCatalog.get(PDFName.of("PageLabels"));
+  if (!pageLabels) return;
+
+  const outCatalog = outDoc.catalog;
+  const copiedRef = outDoc.context.register(
+    srcDoc.context.lookup(pageLabels as PDFRef) as PDFDict | PDFArray,
+  );
+  outCatalog.set(PDFName.of("PageLabels"), copiedRef);
 };
 
 const applyMargin = (box: PageBox, margin: string): PageBox => {
@@ -82,6 +100,8 @@ const trimMargin = async (
     page.setMediaBox(newbox.x, newbox.y, newbox.width, newbox.height);
     outDoc.addPage(page);
   });
+
+  copyPageLabels(srcDoc, outDoc);
   const bytes = await outDoc.save();
   const outPath = withSuffix(path, "_trimmargin");
   await Deno.writeFile(outPath, bytes);
